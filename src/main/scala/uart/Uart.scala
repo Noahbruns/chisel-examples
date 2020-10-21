@@ -194,27 +194,39 @@ class UartMain(frequency: Int, baudRate: Int) extends Module {
     val led = Output(UInt(1.W))
   })
 
+  val tx = Module(new BufferedTx(frequency, baudRate))
+  io.txd := tx.io.txd
+
   val CNT_MAX = (50000000 / 2 - 1).U;
 
   val cntReg = RegInit(0.U(32.W))
   val blkReg = RegInit(0.U(1.W))
-  val ledReg = RegInit(0.U(1.W))
+
+  val cntRegUart = RegInit(0.U(8.W))
+  val len = 1.U
 
   //UART Transmission
-  val msg = "0"
-  if(ledval == 1){
-        msg = "1"
-  }
-  else {
-        msg = "0"
-  }
+  /*val msg = "Init"
   val text = VecInit(msg.map(_.U))
   val len = msg.length.U
 
-  val cntRegUart = RegInit(0.U(8.W))
-
   tx.io.channel.bits := text(cntRegUart)
-  tx.io.channel.valid := cntRegUart =/= len
+  tx.io.channel.valid := cntRegUart =/= len*/
+
+  when(blkReg === 1.U) {
+    val msg = "1"
+    val text = VecInit(msg.map(_.U))
+
+    tx.io.channel.bits := text(cntRegUart)
+    tx.io.channel.valid := cntRegUart =/= len
+  }
+  .otherwise {
+    val msg = "0"
+    val text = VecInit(msg.map(_.U))
+
+    tx.io.channel.bits := text(cntRegUart)
+    tx.io.channel.valid := cntRegUart =/= len
+  }
 
   when(tx.io.channel.ready && cntRegUart =/= len) {
     cntRegUart := cntRegUart + 1.U
@@ -224,7 +236,7 @@ class UartMain(frequency: Int, baudRate: Int) extends Module {
   when(cntReg === CNT_MAX) {
     cntReg := 0.U
     blkReg := ~blkReg
-    ledval := ~ledval
+    cntRegUart := 0.U
   }
   io.led := blkReg
 }
