@@ -1,7 +1,7 @@
 /*
- * 
+ *
  * A UART is a serial port, also called an RS232 interface.
- * 
+ *
  */
 
 package uart
@@ -191,19 +191,42 @@ class UartMain(frequency: Int, baudRate: Int) extends Module {
   val io = IO(new Bundle {
     val rxd = Input(UInt(1.W))
     val txd = Output(UInt(1.W))
+    val led = Output(UInt(1.W))
   })
 
-  val doSender = true
+  val CNT_MAX = (50000000 / 2 - 1).U;
 
-  if (doSender) {
-    val s = Module(new Sender(frequency, baudRate))
-    io.txd := s.io.txd
-  } else {
-    val e = Module(new Echo(frequency, baudRate))
-    e.io.rxd := io.rxd
-    io.txd := e.io.txd
+  val cntReg = RegInit(0.U(32.W))
+  val blkReg = RegInit(0.U(1.W))
+  val ledReg = RegInit(0.U(1.W))
+
+  //UART Transmission
+  val msg = "0"
+  if(ledval == 1){
+        msg = "1"
+  }
+  else {
+        msg = "0"
+  }
+  val text = VecInit(msg.map(_.U))
+  val len = msg.length.U
+
+  val cntRegUart = RegInit(0.U(8.W))
+
+  tx.io.channel.bits := text(cntRegUart)
+  tx.io.channel.valid := cntRegUart =/= len
+
+  when(tx.io.channel.ready && cntRegUart =/= len) {
+    cntRegUart := cntRegUart + 1.U
   }
 
+  cntReg := cntReg + 1.U
+  when(cntReg === CNT_MAX) {
+    cntReg := 0.U
+    blkReg := ~blkReg
+    ledval := ~ledval
+  }
+  io.led := blkReg
 }
 
 object UartMain extends App {
