@@ -205,14 +205,6 @@ class UartMain(frequency: Int, baudRate: Int) extends Module {
   val cntRegUart = RegInit(0.U(8.W))
   val len = 1.U
 
-  //UART Transmission
-  /*val msg = "Init"
-  val text = VecInit(msg.map(_.U))
-  val len = msg.length.U
-
-  tx.io.channel.bits := text(cntRegUart)
-  tx.io.channel.valid := cntRegUart =/= len*/
-
   when(blkReg === 1.U) {
     val msg = "1"
     val text = VecInit(msg.map(_.U))
