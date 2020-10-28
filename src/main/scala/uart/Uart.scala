@@ -200,18 +200,24 @@ class UartMain(frequency: Int, baudRate: Int) extends Module {
   val CNT_MAX = (50000000 / 2 - 1).U;
 
   val cntReg = RegInit(0.U(32.W))
+  val cntRegUart = RegInit(0.U(4.W))
   val blkReg = RegInit(0.U(1.W))
 
-  val len = 1.U
+  tx.io.channel.bits := '0'.U + cntRegUart
+  tx.io.channel.valid := true.B
 
-  tx.io.channel.bits := blkReg + '0'.U
-  tx.io.channel.valid := false.B
+  when(tx.io.channel.ready) {
+    when(cntRegUart === 9.U) {
+      cntRegUart := 0.U
+    }.otherwise{
+      cntRegUart := cntRegUart + 1.U
+    }
+  }
 
   cntReg := cntReg + 1.U
   when(cntReg === CNT_MAX) {
     cntReg := 0.U
     blkReg := ~blkReg
-    tx.io.channel.valid := true.B
   }
   io.led := blkReg
 }
